@@ -47,7 +47,7 @@ Vase = Struct.new(:step_size, :height, :twist, :base_radius, :edges, :edgeness, 
     re = base_radius * radius_factor
     polygon points: ((0...(edges*2)).map do |p|
       r = p.even? ? ri : re
-      point = [r*cos((slice*p)), r*sin((slice*p))]
+      [r*cos((slice*p)), r*sin((slice*p))]
     end.to_a)
   end
 end
@@ -55,34 +55,38 @@ end
 class Group
   extend RubyScad
   def self.build(step_size: 10,
-                 height: 140,
+                 height: 100,
                  twist: 90,
-                 base_radius: 70,
-                 edges: 14,
-                 edgeness: 6,
-                 pinch: 0.2)
-    difference do
-      Vase.new(step_size: step_size,
-               height: height,
-               twist: twist,
-               base_radius: base_radius,
-               edges: edges,
-               edgeness: edgeness,
-               pinch: pinch).build
+                 base_radius: 50,
+                 edges: 12,
+                 edgeness: 5,
+                 pinch: 0.3)
+    # uncomment and increase the base radius for a plate
+    #intersection do
+      #cylinder(r: base_radius * 2, h: 30, center: true)
       difference do
-        wall_and_base_thickness = 0.8 # 1.2 # step_size / 3
         Vase.new(step_size: step_size,
                  height: height,
                  twist: twist,
-                 base_radius: base_radius - wall_and_base_thickness,
+                 base_radius: base_radius,
                  edges: edges,
                  edgeness: edgeness,
                  pinch: pinch).build
-        translate z: step_size do
-          cylinder(r: base_radius * 2, h: wall_and_base_thickness, center: true)
+        difference do
+          wall_and_base_thickness = 1.2 # step_size / 3
+          Vase.new(step_size: step_size,
+                   height: height,
+                   twist: twist,
+                   base_radius: base_radius - wall_and_base_thickness,
+                   edges: edges,
+                   edgeness: edgeness,
+                   pinch: pinch).build
+          translate z: step_size do
+            cylinder(r: base_radius * 2, h: wall_and_base_thickness, center: true)
+          end
         end
       end
-    end
+    #end
   end
 end
 
