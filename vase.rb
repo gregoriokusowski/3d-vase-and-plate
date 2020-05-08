@@ -2,7 +2,7 @@
 
 require 'rubyscad'
 
-Vase = Struct.new(:step_size, :height, :twist, :base_radius, :edges, :edgeness, :pinch, keyword_init: true) do
+SolidVase = Struct.new(:step_size, :height, :twist, :base_radius, :edges, :edgeness, :pinch, keyword_init: true) do
   include RubyScad
   include Math
 
@@ -54,41 +54,43 @@ end
 
 class Group
   extend RubyScad
-  def self.build(step_size: 10,
-                 height: 100,
-                 twist: 90,
-                 base_radius: 50,
-                 edges: 12,
-                 edgeness: 5,
-                 pinch: 0.3)
-    # uncomment and increase the base radius for a plate
-    #intersection do
-      #cylinder(r: base_radius * 2, h: 30, center: true)
+
+  def self.vase(params=BASE_PARAMS)
+    difference do
+      SolidVase.new(params.slice(*VASE_KEYS)).build
       difference do
-        Vase.new(step_size: step_size,
-                 height: height,
-                 twist: twist,
-                 base_radius: base_radius,
-                 edges: edges,
-                 edgeness: edgeness,
-                 pinch: pinch).build
-        difference do
-          wall_and_base_thickness = 1.2 # step_size / 3
-          Vase.new(step_size: step_size,
-                   height: height,
-                   twist: twist,
-                   base_radius: base_radius - wall_and_base_thickness,
-                   edges: edges,
-                   edgeness: edgeness,
-                   pinch: pinch).build
-          translate z: step_size do
-            cylinder(r: base_radius * 2, h: wall_and_base_thickness, center: true)
-          end
+        SolidVase.new(params.slice(*VASE_KEYS).merge(base_radius: params[:base_radius] - params[:wall_and_base_thickness])).build
+        translate z: params[:step_size] do
+          cylinder(r: params[:base_radius] * 2, h: params[:wall_and_base_thickness], center: true)
         end
       end
-    #end
+    end
+  end
+
+  def self.plate
+    intersection do
+      params = BASE_PARAMS
+      cylinder(r: params[:base_radius] * 2, h: 30, center: true)
+      vase(params.merge(radius: params[:base_radius] + (2 * params[:wall_and_base_thickness])))
+    end
   end
 end
 
-Group.build
+VASE_KEYS = %i(step_size height twist base_radius edges edgeness pinch)
+BASE_PARAMS = {
+  step_size: 10,
+  height: 100,
+  twist: 90,
+  base_radius: 50,
+  edges: 12,
+  edgeness: 5,
+  pinch: 0.3,
+  wall_and_base_thickness: 1.2
+}
 
+case ARGV.first
+when 'vase'
+  Group.vase
+when 'plate'
+  Group.plate
+end
